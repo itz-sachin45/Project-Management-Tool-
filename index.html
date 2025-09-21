@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Project Flow — Demo (Canva Code)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --glass-bg: rgba(255,255,255,0.12);
+      --glass-bg-strong: rgba(255,255,255,0.18);
+      --glass-stroke: rgba(255,255,255,0.22);
+    }
+    html, body {
+      height: 100%;
+    }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji','Segoe UI Emoji';
+      background: radial-gradient(1200px 800px at 10% 10%, #7c3aed 0%, transparent 60%) no-repeat,
+                  radial-gradient(1000px 700px at 90% 20%, #06b6d4 0%, transparent 60%) no-repeat,
+                  radial-gradient(800px 700px at 50% 100%, #22c55e 0%, transparent 60%) no-repeat,
+                  #0b1020;
+      color: #e6f0ff;
+      overflow: hidden;
+    }
+    /* Glass panels */
+    .glass {
+      background: var(--glass-bg);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-stroke);
+    }
+    .glass-strong {
+      background: var(--glass-bg-strong);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-stroke);
+    }
+    /* Scroll styling */
+    .thin-scroll::-webkit-scrollbar { height: 10px; width: 10px; }
+    .thin-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.25); border-radius: 999px; }
+    .thin-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.06); }
+
+    /* Drag visual */
+    .drag-over {
+      outline: 2px dashed rgba(255,255,255,0.4);
+      outline-offset: -6px;
+    }
+
+    /* Simple tooltip */
+    .tooltip:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: calc(100% + 8px);
+      right: 50%;
+      transform: translateX(50%);
+      background: rgba(0,0,0,0.7);
+      color: #fff;
+      font-size: 12px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    /* Modal animation */
+    .modal-enter { opacity: 0; transform: translateY(10px) scale(0.98); }
+    .modal-enter-active { opacity: 1; transform: translateY(0) scale(1); transition: all 160ms ease; }
+
+    /* Safe text wrapping */
+    .break-anywhere { overflow-wrap: anywhere; }
+
+    /* Badge pulse */
+    .pulse {
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.15); opacity: .85; }
+    }
+
+    /* Prevent content touching edges on tiny screens */
+    .safe-pad { padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right)); }
+
+    /* Prevent overlap by spacing */
+    .section { padding: 14px; }
+  </style>
+</head>
+<body class="antialiased">
+  <!-- App Shell -->
+  <div class="w-full h-full flex flex-col">
+    <!-- Header -->
+    <header class="section safe-pad flex items-center justify-between glass">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-fuchsia-500 to-cyan-400 shadow-lg flex items-center justify-center">
+          <svg width="20" height="20" viewBox="0 0 24 24" class="text-white"><path fill="currentColor" d="M11 2v7H4V2h7m2 0h7v7h-7V2m-2 13v7H4v-7h7m2 0h7v7h-7v-7Z"/></svg>
+        </div>
+        <div class="leading-tight">
+          <div class="text-lg font-extrabold tracking-tight">Project Flow</div>
+          <div class="text-xs opacity-70">Demo — No passwords, no backend</div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 flex-1 justify-center">
+        <div id="projectSwitcher" class="relative"></div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="notifBtn" class="relative tooltip p-2 rounded-lg hover:bg-white/10 transition" data-tip="Notifications">
+          <svg width="22" height="22" viewBox="0 0 24 24"><path fill="currentColor" d="M12 22a2 2 0 0 0 2-2H10a2 2 0 0 0 2 2m6-6v-5a6 6 0 0 0-5-5.91V4a1 1 0 0 0-2 0v1.09A6 6 0 0 0 6 11v5l-2 2v1h16v-1l-2-2Z"/></svg>
+          <span id="notifBadge" class="hidden absolute -top-1 -right-1 text-[10px] bg-rose-500 text-white rounded-full px-1.5 py-0.5 font-bold shadow pulse">0</span>
+        </button>
+        <div id="userSwitcher" class="relative"></div>
+        <button id="aboutBtn" class="ml-1 px-3 py-2 rounded-lg glass hover:bg-white/20 transition text-xs">About</button>
+      </div>
+    </header>
+
+    <div class="flex min-h-0 flex-1 overflow-hidden">
+      <!-- Sidebar -->
+      <aside class="w-72 min-w-[14rem] max-w-[22rem] glass section overflow-y-auto thin-scroll">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm uppercase tracking-wider opacity-70">Projects</h2>
+          <button id="newProjectBtn" class="px-2.5 py-1.5 rounded-md bg-gradient-to-r from-fuchsia-500 to-cyan-400 text-white text-xs font-semibold shadow hover:opacity-90 transition flex items-center gap-1">
+            <svg width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6z"/></svg>
+            New
+          </button>
+        </div>
+        <div id="projectList" class="mt-3 space-y-2"></div>
+
+        <div class="mt-6">
+          <h2 class="text-sm uppercase tracking-wider opacity-70">Members</h2>
+          <div id="memberList" class="mt-2 space-y-2"></div>
+        </div>
+      </aside>
+
+      <!-- Main Board -->
+      <main class="flex-1 section pt-3 overflow-hidden">
+        <div id="boardHeader" class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <h1 id="boardTitle" class="text-xl font-bold"></h1>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-white/10">Board</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="manageMembersBtn" class="px-3 py-1.5 rounded-md glass hover:bg-white/20 transition text-xs">Manage members</button>
+            <button id="addColumnBtn" class="px-3 py-1.5 rounded-md bg-white/15 hover:bg-white/25 text-xs transition">Add column</button>
+          </div>
+        </div>
+
+        <div id="board" class="h-[calc(100%-52px)] overflow-x-auto overflow-y-hidden thin-scroll">
+          <div id="columnsContainer" class="flex items-start gap-4 min-h-full pb-6"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Notifications Panel -->
+  <div id="notifPanel" class="hidden fixed top-16 right-4 w-[22rem] max-w-[90vw] glass-strong rounded-xl shadow-xl border border-white/10">
+    <div class="p-3 flex items-center justify-between border-b border-white/10">
+      <div class="font-semibold">Notifications</div>
+      <button id="markAllReadBtn" class="text-xs px-2 py-1 rounded-md hover:bg-white/10">Mark all read</button>
+    </div>
+    <div id="notifList" class="max-h-[50vh] overflow-y-auto thin-scroll p-2"></div>
+  </div>
+
+  <!-- Toasts -->
+  <div id="toastContainer" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 space-y-2"></div>
+
+  <!-- Modal Root -->
+  <div id="modalRoot" class="hidden fixed inset-0 z-40">
+    <div class="absolute inset-0 bg-black/50"></div>
+    <div id="modalCard" class="relative max-w-2xl w-[92vw] mx-auto mt-16 glass-strong rounded-2xl shadow-2xl p-5 modal-enter"></div>
+  </div>
+
+  <script>
+    // --- Utility ---
+    const $ = (sel, ctx=document) => ctx.querySelector(sel);
+    const $$ = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
+    const uid = (p='id') => p + '_' + Math.random().toString(36).slice(2,8) + '_' + Date.now().toString(36);
+
+    const formatDate = (iso) => {
+      if (!iso) return '';
+      const d = new Date(iso);
+      if (isNaN(d)) return '';
+      return d.toLocaleDateString([], { month:'short', day:'numeric' });
+    };
+
+    const timeAgo = (t) => {
+      const s = Math.floor((Date.now() - t)/1000);
+      if (s < 60) return s + 's ago';
+      const m = Math.floor(s/60); if (m < 60) return m + 'm ago';
+      const h = Math.floor(m/60); if (h < 24) return h + 'h ago';
+      const d = Math.floor(h/24); return d + 'd ago';
+    };
+
+    const randomColor = () => {
+      const palette = ['#ef4444','#f97316','#f59e0b','#22c55e','#06b6d4','#3b82f6','#8b5cf6','#ec4899'];
+      return palette[Math.floor(Math.random()*palette.length)];
+    };
+
+    // --- Data Store ---
+    const STORAGE_KEY = 'cc_pmtool_v1';
+    let channel = null;
+    try { channel = new BroadcastChannel('cc_pmtool_demo'); } catch(e) { channel = null; }
+    let data = null;
+
+    const defaultData = () => {
+      const now = Date.now();
+      return {
+        version: 1,
+        users: [
+          { id: 'u1', name: 'Alice', color: '#ef4444' },
+          { id: 'u2', name: 'Bob', color: '#3b82f6' },
+          { id: 'u3', name: 'Chloe', color: '#22c55e' }
+        ],
+        currentUserId: 'u1',
+        userLastSeen: { u1:0, u2:0, u3:0 },
+        activities: [],
+        projects: [
+          {
+            id: 'p1',
+            name: 'Website Redesign',
+            members: ['u1','u2','u3'],
+            columns: [
+              { id: 'c1', name: 'To Do', taskIds: ['t1','t2'] },
+              { id: 'c2', name: 'In Progress', taskIds: ['t3'] },
+              { id: 'c3', name: 'Done', taskIds: [] }
+            ],
+            tasks: {
+              t1: { id:'t1', title: 'Gather requirements', description: 'Sync with stakeholders and compile scope.', assignees:['u1'], dueDate:'', comments: [], createdAt: now-10000000, updatedAt: now-10000000 },
+              t2: { id:'t2', title: 'Create wireframes', description: 'Sketch homepage and pricing.', assignees:['u2'], dueDate: new Date(now+3*86400000).toISOString(), comments: [{id: uid('cm'), userId:'u1', text:'Use a sticky header', createdAt: now-8000000}], createdAt: now-9000000, updatedAt: now-8000000 },
+              t3: { id:'t3', title: 'Build hero section', description: 'Motion + headline, make it pop.', assignees:['u3'], dueDate: new Date(now+1*86400000).toISOString(), comments: [], createdAt: now-7000000, updatedAt: now-7000000 }
+            }
+          }
+        ],
+        selectedProjectId: 'p1'
+      };
+    };
+
+    const load = () => {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) { data = defaultData(); save(false); return; }
+      try {
+        data = JSON.parse(raw);
+        if (!data.version) data.version = 1;
+        if (!data.userLastSeen) {
+          data.userLastSeen = {};
+          data.users.forEach(u => data.userLastSeen[u.id] = 0);
+        }
+        if (!data.selectedProjectId && data.projects[0]) data.selectedProjectId = data.projects[0].id;
+      } catch(e) {
+        data = defaultData(); save(false);
+      }
+    };
+
+    const save = (broadcast=true) => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      if (broadcast) {
+        if (channel) {
+          channel.postMessage({ type: 'sync', ts: Date.now() });
+        } else {
+          // Fallback: trigger storage by writing a ping key
+          localStorage.setItem(STORAGE_KEY + '_ping', String(Date.now()));
+        }
+      }
+    };
+
+    if (channel) {
+      channel.onmessage = (ev) => {
+        if (ev?.data?.type === 'sync') {
+          load(); renderAll(false);
+          showSoftToast('Updated in real-time');
+        }
+      };
+    }
+    window.addEventListener('storage', (e) => {
+      if (e.key === STORAGE_KEY || e.key === STORAGE_KEY + '_ping') {
+        load(); renderAll(false);
+        showSoftToast('Updated in real-time');
+      }
+    });
+
+    // --- Toasts ---
+    function showToast(msg) {
+      const wrap = $('#toastContainer');
+      const el = document.createElement('div');
+      el.className = 'glass-strong rounded-lg px-4 py-2 text-sm shadow-lg border border-white/10';
+      el.textContent = msg;
+      wrap.appendChild(el);
+      setTimeout(() => {
+        el.style.transition = 'opacity 180ms ease, transform 180ms ease';
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(6px)';
+        setTimeout(() => el.remove(), 220);
+      }, 1600);
+    }
+    function showSoftToast(msg) {
+      const wrap = $('#toastContainer');
+      const el = document.createElement('div');
+      el.className = 'glass rounded-md px-3 py-1 text-xs opacity-80';
+      el.textContent = msg;
+      wrap.appendChild(el);
+      setTimeout(() => el.remove(), 900);
+    }
+
+    // --- Helpers ---
+    const getCurrentUser = () => data.users.find(u => u.id === data.currentUserId);
+    const getProject = () => data.projects.find(p => p.id === data.selectedProjectId);
+    const getUser = (id) => data.users.find(u => u.id === id);
+
+    const pushActivity = (message, { projectId=null, taskId=null } = {}) => {
+      data.activities.unshift({
+        id: uid('act'),
+        message,
+        actorId: data.currentUserId,
+        projectId,
+        taskId,
+        createdAt: Date.now()
+      });
+      save();
+      updateNotifBadge();
+    };
+
+    // --- UI: Header controls ---
+    function renderProjectSwitcher() {
+      const node = $('#projectSwitcher');
+      const proj = getProject();
+      node.innerHTML = `
+        <button class="px-3 py-2 rounded-lg glass hover:bg-white/20 transition text-sm flex items-center gap-2">
+          <span class="font-semibold">${proj ? escapeHTML(proj.name) : 'No project'}</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" class="opacity-80"><path fill="currentColor" d="M7 10l5 5l5-5z"/></svg>
+        </button>
+        <div class="hidden absolute top-10 left-0 w-64 glass-strong rounded-xl p-2 shadow-xl border border-white/10 z-30"></div>
+      `;
+      const btn = node.querySelector('button');
+      const menu = node.querySelector('div.absolute');
+      const openMenu = () => {
+        const items = data.projects.map(p => `
+          <button data-id="${p.id}" class="w-full text-left px-3 py-2 rounded-lg hover:bg-white/10 ${p.id===data.selectedProjectId?'bg-white/10':''}">
+            ${escapeHTML(p.name)}
+          </button>
+        `).join('') + `<div class="h-px my-1 bg-white/10"></div>
+          <button id="ps_new" class="w-full text-left px-3 py-2 rounded-lg hover:bg-white/10 text-fuchsia-200">+ New project</button>`;
+        menu.innerHTML = items;
+        menu.classList.remove('hidden');
+      };
+      const closeMenu = () => menu.classList.add('hidden');
+
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (menu.classList.contains('hidden')) openMenu(); else closeMenu();
+      });
+      document.addEventListener('click', closeMenu);
+
+      menu.addEventListener('click', (e) => {
+        const b = e.target.closest('button');
+        if (!b) return;
+        if (b.id === 'ps_new') { closeMenu(); openProjectModal(); return; }
+        const id = b.getAttribute('data-id');
+        if (id && id !== data.selectedProjectId) {
+          data.selectedProjectId = id; save();
+          renderAll();
+        }
+        closeMenu();
+      });
+    }
+
+    function renderUserSwitcher() {
+      const node = $('#userSwitcher');
+      const cur = getCurrentUser();
+      node.innerHTML = `
+        <button class="relative pl-3 pr-2 py-1.5 rounded-lg glass hover:bg-white/20 transition flex items-center gap-2">
+          ${avatarBubble(cur)}
+          <span class="text-sm">${escapeHTML(cur.name)}</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" class="opacity-80"><path fill="currentColor" d="M7 10l5 5l5-5z"/></svg>
+        </button>
+        <div class="hidden absolute top-10 right-0 w-56 glass-strong rounded-xl p-2 shadow-xl border border-white/10 z-30"></div>
+      `;
+      const btn = node.querySelector('button');
+      const menu = node.querySelector('div.absolute');
+
+      const openMenu = () => {
+        menu.innerHTML = data.users.map(u => `
+          <button data-id="${u.id}" class="w-full text-left px-3 py-2 rounded-lg hover:bg-white/10 flex items-center gap-2 ${u.id===data.currentUserId?'bg-white/10':''}">
+            ${avatarBubble(u)} <span>${escapeHTML(u.name)}</span>
+          </button>
+        `).join('') + `
+          <div class="h-px my-1 bg-white/10"></div>
+          <button id="addUserBtn" class="w-full text-left px-3 py-2 rounded-lg hover:bg-white/10 text-cyan-200">+ Add demo user</button>
+        `;
+        menu.classList.remove('hidden');
+      };
+      const closeMenu = () => menu.classList.add('hidden');
+
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (menu.classList.contains('hidden')) openMenu(); else closeMenu();
+      });
+      document.addEventListener('click', closeMenu);
+
+      menu.addEventListener('click', (e) => {
+        const b = e.target.closest('button');
+        if (!b) return;
+        if (b.id === 'addUserBtn') {
+          closeMenu();
+          openAddUserModal();
+          return;
+        }
+        const id = b.getAttribute('data-id');
+        if (id) {
+          data.currentUserId = id; save();
+          renderAll();
+          showSoftToast('Switched user (demo)');
+        }
+        closeMenu();
+      });
+    }
+
+    // --- UI: Sidebar ---
+    function renderSidebar() {
+      const list = $('#projectList');
+      list.innerHTML = '';
+      data.projects.forEach(p => {
+        const el = document.createElement('div');
+        el.className = `rounded-lg px-3 py-2 hover:bg-white/10 transition cursor-pointer ${p.id===data.selectedProjectId?'bg-white/10':''}`;
+        el.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" class="opacity-80"><path fill="currentColor" d="M11 2v7H4V2h7m2 0h7v7h-7V2m-2 13v7H4v-7h7m2 0h7v7h-7v-7Z"/></svg>
+              <span class="text-sm break-anywhere">${escapeHTML(p.name)}</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <button class="p-1 rounded hover:bg-white/10" data-op="rename" data-id="${p.id}" title="Rename">
+                <svg width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="m5 21l3-1l11-11l-2-2L6 18l-1 3zM14 7l2 2l1-1l-2-2z"/></svg>
+              </button>
+              <button class="p-1 rounded hover:bg-white/10" data-op="delete" data-id="${p.id}" title="Delete">
+                <svg width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M9 3h6l1 1h4v2H4V4h4zM5 7h14l-1 14H6zm5 3v8h2v-8z"/></svg>
+              </button>
+            </div>
+          </div>
+        `;
+        el.addEventListener('click', (e) => {
+          const btn = e.target.closest('button');
+          if (btn) return; // handled below
+          if (data.selectedProjectId !== p.id) {
+            data.selectedProjectId = p.id; save();
+            renderAll();
+          }
+        });
+        list.appendChild(el);
+      });
+
+      list.addEventListener('click', (e) => {
+        const b = e.target.closest('button[data-op]');
+        if (!b) return;
+        const id = b.getAttribute('data-id');
+        const proj = data.projects.find(x => x.id === id);
+        if (!proj) return;
+        if (b.getAttribute('data-op') === 'rename') {
+          openRenameProjectModal(proj);
+        } else if (b.getAttribute('data-op') === 'delete') {
+          openConfirmModal({
+            title: 'Delete project?',
+            body: 'This will remove the project and its tasks (demo data).',
+            confirmText: 'Delete',
+            confirmStyle: 'bg-rose-500 hover:bg-rose-600',
+            onConfirm: () => {
+              const idx = data.projects.findIndex(x => x.id === id);
+              if (idx >= 0) data.projects.splice(idx,1);
+              if (!data.projects.length) {
+                const newP = createProject('My Project');
+                data.projects.push(newP);
+                data.selectedProjectId = newP.id;
+              } else if (!data.projects.some(x=>x.id===data.selectedProjectId)) {
+                data.selectedProjectId = data.projects[0].id;
+              }
+              pushActivity(`deleted project “${proj.name}”`);
+              save();
+              renderAll();
+              showToast('Project deleted');
+            }
+          });
+        }
+      });
+
+      // Members area
+      const memWrap = $('#memberList');
+      memWrap.innerHTML = '';
+      getProject()?.members.forEach(uid_ => {
+        const u = getUser(uid_);
+        if (!u) return;
+        const item = document.createElement('div');
+        item.className = 'flex items-center gap-2';
+        item.innerHTML = `${avatarBubble(u)} <span class="text-sm">${escapeHTML(u.name)}</span>`;
+        memWrap.appendChild(item);
+      });
+
+      $('#newProjectBtn').onclick = (e) => {
+        e.preventDefault();
+        openProjectModal();
+      };
+    }
+
+    // --- UI: Board ---
+    function renderBoard() {
+      const proj = getProject();
+      $('#boardTitle').textContent = proj ? proj.name : '';
+      const container = $('#columnsContainer');
+      container.innerHTML = '';
+
+      if (!proj) return;
+
+      proj.columns.forEach(col => {
+        const colEl = document.createElement('div');
+        colEl.className = 'w-80 min-w-[18rem] max-w-[20rem] shrink-0 rounded-xl glass-strong border border-white/10';
+        colEl.setAttribute('data-col-id', col.id);
+        colEl.innerHTML = `
+          <div class="px-4 pt-3 pb-2 border-b border-white/10 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="font-semibold">${escapeHTML(col.name)}</span>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-white/10">${col.taskIds.length}</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <button class="p-1 rounded hover:bg-white/10" data-op="rename-col" title="Rename column">
+                <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="m5 21l3-1l11-11l-2-2L6 18l-1 3zM14 7l2 2l1-1l-2-2z"/></svg>
+              </button>
+              <button class="p-1 rounded hover:bg-white/10" data-op="delete-col" title="Delete column">
+                <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M9 3h6l1 1h4v2H4V4h4zM5 7h14l-1 14H6zm5 3v8h2v-8z"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="px-3 py-3 space-y-2 max-h-[60vh] overflow-y-auto thin-scroll" data-list></div>
+          <div class="px-3 py-3 border-t border-white/10">
+            <button class="w-full px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm transition" data-op="add-task">
+              + Add task
+            </button>
+          </div>
+        `;
+        const list = $('[data-list]', colEl);
+
+        // Setup drop target
+        ;['dragenter','dragover'].forEach(evt => {
+          list.addEventListener(evt, (e) => {
+            e.preventDefault();
+            list.classList.add('drag-over');
+          });
+        });
+        ;['dragleave','drop'].forEach(evt => {
+          list.addEventListener(evt, (e) => {
+            if (evt !== 'drop') list.classList.remove('drag-over');
+          });
+        });
+        list.addEventListener('drop', (e) => {
+          e.preventDefault();
+          list.classList.remove('drag-over');
+          const taskId = e.dataTransfer.getData('text/plain');
+          moveTaskToColumn(proj.id, taskId, col.id);
+        });
+
+        // Render tasks
+        col.taskIds.forEach(tid => {
+          const task = proj.tasks[tid];
+          if (!task) return;
+          list.appendChild(renderTaskCard(task, proj));
+        });
+
+        // Column actions
+        colEl.addEventListener('click', (e) => {
+          const b = e.target.closest('button[data-op]');
+          if (!b) return;
+          const op = b.getAttribute('data-op');
+          if (op === 'add-task') {
+            openTaskModal({ project: proj, columnId: col.id, task: null });
+          } else if (op === 'rename-col') {
+            openRenameColumnModal(proj, col);
+          } else if (op === 'delete-col') {
+            if (col.taskIds.length) {
+              showToast('Move or delete tasks first');
+              return;
+            }
+            openConfirmModal({
+              title: 'Delete column?',
+              body: 'Remove this column from the board.',
+              confirmText: 'Delete',
+              confirmStyle: 'bg-rose-500 hover:bg-rose-600',
+              onConfirm: () => {
+                const idx = proj.columns.findIndex(x => x.id === col.id);
+                if (idx >= 0) proj.columns.splice(idx,1);
+                pushActivity(`deleted column “${col.name}”`, { projectId: proj.id });
+                save(); renderBoard();
+              }
+            });
+          }
+        });
+
+        container.appendChild(colEl);
+      });
+
+      // Add column button
+      $('#addColumnBtn').onclick = (e) => {
+        e.preventDefault();
+        openAddColumnModal();
+      };
+      // Manage members
+      $('#manageMembersBtn').onclick = (e) => {
+        e.preventDefault();
+        openManageMembersModal();
+      };
+    }
+
+    function renderTaskCard(task, proj) {
+      const el = document.createElement('div');
+      el.className = 'rounded-lg bg-white/[0.06] hover:bg-white/[0.12] transition p-3 cursor-pointer border border-white/10';
+      el.draggable = true;
+      el.setAttribute('data-task-id', task.id);
+      el.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/plain', task.id);
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      el.addEventListener('click', () => {
+        openTaskModal({ project: proj, task, columnId: findColumnIdByTask(proj, task.id) });
+      });
+      const due = task.dueDate ? `<span class="text-[11px] px-1.5 py-0.5 rounded bg-white/10">${formatDate(task.dueDate)}</span>` : '';
+      el.innerHTML = `
+        <div class="flex items-start justify-between gap-2">
+          <div class="font-semibold break-anywhere">${escapeHTML(task.title || 'Untitled')}</div>
+          <button class="p-1 rounded hover:bg-white/10" title="Quick delete" data-quick-del>
+            <svg width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M9 3h6l1 1h4v2H4V4h4zM5 7h14l-1 14H6zm5 3v8h2v-8z"/></svg>
+          </button>
+        </div>
+        <div class="mt-2 flex items-center justify-between">
+          <div class="flex -space-x-2">
+            ${task.assignees.map(id => smallAvatar(getUser(id))).join('')}
+          </div>
+          <div class="flex items-center gap-2">
+            ${due}
+            <div class="flex items-center gap-1 opacity-80">
+              <svg width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M20 12c0 4.418-3.582 8-8 8s-8-3.582-8-8s3.582-8 8-8s8 3.582 8 8Zm-8-6a6 6 0 1 0 0 12a6 6 0 0 0 0-12Zm1 5.586V7h-2v6h5v-2h-3Z"/></svg>
+              <span class="text-[11px]">${timeAgo(task.updatedAt)}</span>
+            </div>
+          </div>
+        </div>
+      `;
+      el.querySelector('[data-quick-del]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openConfirmModal({
+          title: 'Delete task?',
+          body: 'Remove this task from the board.',
+          confirmText: 'Delete',
+          confirmStyle: 'bg-rose-500 hover:bg-rose-600',
+          onConfirm: () => {
+            deleteTask(proj.id, task.id);
+            showToast('Task deleted');
+          }
+        });
+      });
+      return el;
+    }
+
+    function findColumnIdByTask(proj, taskId) {
+      const col = proj.columns.find(c => c.taskIds.includes(taskId));
+      return col ? col.id : null;
+    }
+
+    function moveTaskToColumn(projectId, taskId, newColId) {
+      const proj = data.projects.find(p => p.id === projectId);
+      if (!proj) return;
+      const fromCol = proj.columns.find(c => c.taskIds.includes(taskId));
+      const toCol = proj.columns.find(c => c.id === newColId);
+      if (!toCol) return;
+      if (fromCol) {
+        fromCol.taskIds = fromCol.taskIds.filter(id => id !== taskId);
+      }
+      if (!toCol.taskIds.includes(taskId)) toCol.taskIds.push(taskId);
+      const t = proj.tasks[taskId];
+      if (t) t.updatedAt = Date.now();
+      pushActivity(`moved “${t?.title || 'Task'}” to “${toCol.name}”`, { projectId, taskId });
+      save(); renderBoard();
+    }
+
+    function deleteTask(projectId, taskId) {
+      const proj = data.projects.find(p => p.id === projectId);
+      if (!proj) return;
+      const col = proj.columns.find(c => c.taskIds.includes(taskId));
+      if (col) col.taskIds = col.taskIds.filter(id => id !== taskId);
+      const t = proj.tasks[taskId];
+      delete proj.tasks[taskId];
+      pushActivity(`deleted task “${t?.title || 'Task'}”`, { projectId, taskId });
+      save(); renderBoard();
+    }
+
+    // --- UI: Notifications ---
+    function updateNotifBadge() {
+      const badge = $('#notifBadge');
+      const cur = getCurrentUser();
+      const unread = data.activities.filter(a => a.actorId !== cur.id && a.createdAt > (data.userLastSeen[cur.id] || 0)).length;
+      if (unread > 0) {
+        badge.classList.remove('hidden');
+        badge.textContent = unread > 99 ? '99+' : String(unread);
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    function toggleNotifPanel() {
+      const panel = $('#notifPanel');
+      if (panel.classList.contains('hidden')) {
+        renderNotifList();
+        panel.classList.remove('hidden');
+        // mark read on open
+        const cur = getCurrentUser();
+        data.userLastSeen[cur.id] = Date.now();
+        save();
+        updateNotifBadge();
+      } else {
+        panel.classList.add('hidden');
+      }
+    }
+
+    function renderNotifList() {
+      const list = $('#notifList');
+      if (!data.activities.length) {
+        list.innerHTML = `<div class="text-sm opacity-70 px-2 py-3">No notifications yet</div>`;
+        return;
+      }
+      list.innerHTML = data.activities.slice(0, 40).map(a => {
+        const actor = getUser(a.actorId);
+        const proj = a.projectId ? data.projects.find(p => p.id === a.projectId) : null;
+        return `
+          <div class="px-2 py-2 rounded-lg hover:bg-white/10 transition">
+            <div class="flex items-start gap-2">
+              ${actor ? smallAvatar(actor) : ''}
+              <div class="flex-1">
+                <div class="text-sm">
+                  <span class="font-semibold">${escapeHTML(actor?.name || 'Someone')}</span>
+                  <span class="opacity-90"> ${escapeHTML(a.message)}</span>
+                  ${proj ? `<span class="opacity-70">in</span> <span class="font-medium">${escapeHTML(proj.name)}</span>` : ''}
+                </div>
+                <div class="text-[11px] opacity-70 mt-0.5">${timeAgo(a.createdAt)}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // --- Modals ---
+    function openModal(innerHTML) {
+      const root = $('#modalRoot');
+      const card = $('#modalCard');
+      card.innerHTML = innerHTML;
+      root.classList.remove('hidden');
+      requestAnimationFrame(() => {
+        card.classList.add('modal-enter-active');
+      });
+      root.onclick = (e) => {
+        if (e.target === root || e.target.classList.contains('modal-close')) closeModal();
+      };
+    }
+    function closeModal() {
+      const root = $('#modalRoot');
+      const card = $('#modalCard');
+      card.classList.remove('modal-enter-active');
+      setTimeout(() => root.classList.add('hidden'), 120);
+    }
+
+    function openAboutModal() {
+      openModal(`
+        <div class="flex items-start justify-between">
+          <div class="text-lg font-bold">About this Demo</div>
+          <button class="modal-close p-2 rounded hover:bg-white/10">
+            <svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M18.3 5.71L12 12.01l-6.29-6.3L4.29 7.1L10.6 13.4l-6.3 6.3l1.41 1.41l6.29-6.29l6.3 6.29l1.4-1.41l-6.29-6.3l6.29-6.29z"/></svg>
+          </button>
+        </div>
+        <div class="mt-3 text-sm opacity-90 space-y-2">
+          <p>This is a front-end demo built by Canva Code. It includes projects, boards, tasks, assignments, comments, and in-app notifications.</p>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>No real authentication: switch users from the top-right menu (no passwords).</li>
+            <li>No backend: data is stored locally in your browser.</li>
+            <li>Real-time is simulated using browser channels within your device.</li>
+          </ul>
+        </div>
+        <div class="mt-4 flex justify-end">
+          <button class="modal-close px-4 py-2 rounded-lg bg-white/15 hover:bg-white/25">Close</button>
+        </div>
+      `);
+    }
+
+    function openProjectModal() {
+      const members = data.users.map(u => `
+        <label class="flex items-center gap-2 px-2 py-1 rounded hover:bg-white/10">
+          <input type="checkbox" value="${u.id}" class="accent-white" ${'checked'}>
+          ${avatarBubble(u)} <span>${escapeHTML(u.name)}</span>
+        </label>
+      `).join('');
+      openModal(`
+        <form id="projForm">
+          <div class="flex items-start justify-between">
+            <div class="text-lg font-bold">Create project</div>
+            <button type="button" class="modal-close p-2 rounded hover:bg-white/10">
+              <svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M18.3 5.71L12 12.01l-6.29-6.3L4.29 7.1L10.6 13.4l-6.3 6.3l1.41 1.41l6.29-6.29l6.3 6.29l1.4-1.41l-6.29-6.3l6.29-6.29z"/></svg>
+            </button>
+          </div>
+          <div class="mt-3 space-y-3">
+            <div>
+              <label class="text-sm opacity-80">Project name</label>
+              <input required type="text" name="name" placeholder="e.g. Marketing Launch" class="mt-1 w-full px-3 py-2 rounded-lg bg-white/10 border border-white/10 outline-none focus:ring-2 focus:ring-cyan-400"/>
+            </div>
+            <div>
+              <div class="text-sm opacity-80 mb-1">Members</div>
+              <div class="max-h-40 overflow-y-auto thin-scroll space-y-1">${members}</div>
+            </div>
+          </div>
+          <div class="mt-4 flex justify-end gap-2">
+            <button type="button" class="modal-close px-4 py-2 rounded-lg hover:bg-white/10">Cancel</button>
+            <button type="submit" class="px-4 py-2 rounded-lg bg-gradient-to-r from-fuchsia-500 to-cyan-400 font-semibold">Create</button>
+          </div>
+        </form>
+      `);
+      $('#projForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const name = form.name.value.trim() || 'Untitled';
+        const selected = Array.from(form.querySelectorAll('input[type="checkbox"]:checked')).map(i => i.value);
+        const proj = createProject(name, selected.length ? selected : [data.currentUserId]);
+        data.projects.push(proj);
+        data.selectedProjectId = proj.id;
+        pushActivity(`created project “${name}”`, { projectId: proj.id });
+        save(); renderAll();
+        closeModal();
+        showToast('Project created');
+      });
+    }
+
+    function openRenameProjectModal(proj) {
+      openModal(`
+        <form id="renameForm">
+          <div class="text-lg font-bold">Rename project</div>
+          <div class="mt-3">
+            <input required type="text" name="name" value="${escapeAttr(proj.name)}" class="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/10 outline-none focus:ring-2 focus:ring-cyan-400"/>
+          </div>
+          <div class="mt-4 flex justify-end gap-2">
+            <button type="button" class="modal-close px-4 py-2 rounded-lg hover:bg-white/10">Cancel</button>
+            <button type="submit" class="px-4 py-2 rounded-lg bg-white/15 hover:bg-white/25">Save</button>
+          </div>
+        </form>
+      `);
+      $('#renameForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = e.target.name.value.trim();
+        if (!name) return;
+        proj.name = name;
+        pushActivity(`renamed project to “${name}”`, { projectId: proj.id });
+        save(); renderAll(); closeModal();
+        showToast('Project renamed');
+      });
+    }
+
+    function openAddColumnModal() {
+      const proj = getProject(); if (!proj) return;
+      openModal(`
+        <form id="colForm">
+          <div class="text-lg font-bold">Add column</div>
+          <div class="mt-3">
+            <input required type="text" name="name" placeholder="e.g. Backlog" class="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/10 outline-none focus:ring-2 focus:ring-cyan-400"/>
+          </div>
+          <div class="mt-4 flex justify-end gap-2">
+            <button type="button" class="modal-close px-4 py-2 rounded-lg hover:bg-white/10">Cancel</button>
+            <button type="submit" class="px-4 py-2 rounded-lg bg-white/15 hover:bg-white/25">Add</button>
+          </div>
+        </form>
+      `);
+      $('#colForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = e.target.name.value.trim() || 'New Column';
+        const col = { id: uid('col'), name, taskIds: [] };
+        proj.columns.push(col);
+        pushActivity(`added column “${name}”`, { projectId: proj.id });
+        save(); renderBoard(); closeModal();
+        showToast('Column added');
+      });
+    }
+
+    function openRenameColumnModal(proj, col) {
+      openModal(`
+        <form id="rcolForm">
+          <div class="text-lg font-bold">Rename column</div>
+          <div class="mt-3">
+            <input required type="text" name="name" value="${escapeAttr(col.name)}" class="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/10 outline-none focus:ring-2 focus:ring-cyan-400"/>
+          </div>
+          <div class="mt-4 flex justify-end gap-2">
+            <button type="button" class="modal-close px-4 py-2 rounded-lg hover:bg-white/10">Cancel</button>
+            <button type="submit" class="px-4 py-2 rounded-lg bg-white/15 hover:bg-white/25">Save</button>
+          </div>
+        </form>
+      `);
+      $('#rcolForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = e.target.name.value.trim();
+        if (!name) return;
+        col.name = name;
+        pushActivity(`renamed a column to “${name}”`, { projectId: proj.id });
+        save(); renderBoard(); closeModal();
+        showToast('Column renamed');
+      });
+    }
+
+    function openManageMembersModal() {
+      const proj = getProject(); if (!proj) return;
+      const items = data.users.map(u => `
+        <label class="flex items-center gap-2 px-2 py-1 rounded hover:bg-white/10">
+          <input type="checkbox" value="${u.id}" class="accent-white" ${proj.members.includes(u.id)?'checked':''}>
+          ${avatarBubble(u)} <span>${escapeHTML(u.name)}</span>
+        </label>
+      `).join('');
+      openModal(`
+        <form id="mmForm">
+          <div class="text-lg font-bold">Manage members</div>
+          <div class="mt-3 space-y-2">
+            <div class="max-h-60 overflow-y-auto thin-scroll space-y-1">${items}</div>
+            <div class="text-xs opacity-70">Members can be assigned tasks.</div>
+          </div>
+          <div class="mt-4 flex justify-end gap-2">
+            <button type="button" class="modal-close px-4 py-2 rounded-lg hover:bg-white/10">Close</button>
+            <button type="submit" class="px-4 py-2 rounded-lg bg-white/15 hover:bg-white/25">Save</button>
+          </div>
+        </form>
+      `);
+      $('#mmForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const sel = Array.from($$('#mmForm input[type="checkbox"]:checked')).map(i => i.value);
+        proj.members = sel;
+        pushActivity('updated project members', { projectId: proj.id });
+        save(); renderAll(); closeModal();
+        showToast('Members updated');
+      });
+    }
+
+    function openAddUserModal() {
+      openModal(`
+        <form id="userForm">
+          <div class="text-lg font-bold">Add demo user</div>
+          <div class="mt-3 grid grid-cols-1 gap-3">
+            <div>
+              <label class="text-sm opacity-80">Name</label>
+              <input required type="text" name="name" placeholder="e.g. Dana" class="mt-1 w-full px-3 py-2 rounded-lg bg-white/10 border border-white/10 outline-none focus:ring-2 focus:ring-cyan-400"/>
+            </div>
+          </div>
+          <div class="mt-4 flex justify-end gap-2">
+            <button type="button" class="modal-close px-4 py-2 rounded-lg hover:bg-white/10">Cancel</button>
+            <button type="submit" class="px-4 py-2 rounded-lg bg-gradient-to-r from-fuchsia-500 to-cyan-400 font-semibold">Add user</button>
+          </div>
+        </form>
+      `);
+      $('#userForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = e.target.name.value.trim();
+        if (!name) return;
+        const u = { id: uid('u'), name, color: randomColor() };
+        data.users.push(u);
+        data.userLastSeen[u.id] = 0;
+        save(); renderAll(); closeModal();
+        showToast('User added');
+      });
+    }
+
+    function openTaskModal({ project, columnId, task }) {
+      const isNew = !task;
+      const members = project.members.map(uid_ => data.users.find(u => u.id === uid_)).filter(Boolean);
+      const selectedAssignees = (task?.assignees || []);
+      const assigneesHtml = members.map(u => `
+        <label class="flex items-center gap-2 px-2 py-1 rounded hover:bg-white/10">
+          <input type="checkbox" value="${u.id}" class="accent-white" ${selectedAssignees.includes(u.id)?'checked':''}>
+          ${avatarBubble(u)} <span>${escapeHTML(u.name)}</span>
+        </label>
+      `).join('');
+      const commentsHtml = (task?.comments || []).slice().sort((a,b) => a.createdAt - b.createdAt).map(c => {
+        const author = getUser(c.userId);
+        return `
+          <div class="flex items-start gap-2">
+            ${smallAvatar(author)}
+            <div class="bg-white/5 border border-white/10 rounded-lg px-3 py-2 max-w-full">
+              <div class="text-xs opacity-70">${escapeHTML(author?.name || 'User')} • ${timeAgo(c.createdAt)}</div>
+              <div class="text-sm mt-1 break-anywhere">${escapeHTML(c.text)}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      openModal(`
+        <form id="taskForm">
+          <div class="flex items-start justify-between">
+            <div class="text-lg font-bold">${isNew ? 'New task' : 'Task details'}</div>
+            <div class="flex items-center gap-2">
+              ${!isNew ? `<button type="button" id="deleteTaskBtn" class="px-3 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-600">Delete</button>`:''}
+              <button type="button" class="modal-close p-2 rounded hover:bg-white/10">
+                <svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M18.3 5.71L12 12.01l-6.29-6.3L4.29 7.1L10.6 13.4l-6.3 6.3l1.41 1.41l6.29-6.29l6.3 6.29l1.4-1.41l-6.29-6.3l6.29-6.29z"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="mt-3 grid md:grid-cols-2 gap-4">
+            <div class="space-y-3">
+              <div>
+                <label class="text-sm opacity-80">Title</label>
+                <input required type="text" name="title" value="${escapeAttr(task?.title || '')}" placeholder="Task title" class="mt-1 w-full px-3 py-2 rounded-lg bg-white/10 border border-white/10 outline-none focus:ring-2 focus:ring-cyan-400"/>
+              </div>
+              <div>
+                <label class="text-sm opacity-80">Description</label>
+                <textarea name="desc" placeholder="Details, links, ideas..." rows="5" class="mt-1 w-full px-3 py-2 rounded-lg bg-white/10 border border-white/10 outline-none focus:ring-2 focus:ring-cyan-400">${escapeHTML(task?.description || '')}</textarea>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-sm opacity-80">Due date</label>
+                  <input type="date" name="due" value="${task?.dueDate ? new Date(task.dueDate).toISOString().slice(0,10) : ''}" class="mt-1 w-full px-3 py-2 rounded-lg bg-white/10 border border-white/10 outline-none focus:ring-2 focus:ring-cyan-400"/>
+                </div>
+                <div>
+                  <label class="text-sm opacity-80">Column</label>
+                  <select name="col" class="mt-1 w-full px-3 py-2 rounded-lg bg-white/10 border border-white/10 outline-none focus:ring-2 focus:ring-cyan-400">
+                    ${project.columns.map(c => `<option value="${c.id}" ${c.id===(isNew?columnId:findColumnIdByTask(project, task.id))?'selected':''}>${escapeHTML(c.name)}</option>`).join('')}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="text-sm opacity-80">Assignees</label>
+                <div class="mt-1 max-h-32 overflow-y-auto thin-scroll space-y-1">${assigneesHtml || '<div class="text-xs opacity-70">No members to assign</div>'}</div>
+              </div>
+            </div>
+
+            <div class="space-y-3">
+              <div>
+                <div class="text-sm opacity-80 mb-1">Comments</div>
+                <div class="space-y-2 max-h-56 overflow-y-auto thin-scroll p-2 rounded-lg bg-white/5 border border-white/10">${commentsHtml || '<div class="text-xs opacity-70">No comments yet</div>'}</div>
+                <div class="mt-2 flex items-center gap-2">
+                  <input type="text" name="comment" placeholder="Write a comment..." class="flex-1 px-3 py-2 rounded-lg bg-white/10 border border-white/10 outline-none focus:ring-2 focus:ring-cyan-400"/>
+                  <button type="button" id="addCommentBtn" class="px-3 py-2 rounded-lg bg-white/15 hover:bg-white/25">Post</button>
+                </div>
+              </div>
+              <div class="text-xs opacity-70">Tip: Comments show up in notifications for other users.</div>
+            </div>
+          </div>
+
+          <div class="mt-4 flex justify-end gap-2">
+            <button type="button" class="modal-close px-4 py-2 rounded-lg hover:bg-white/10">Close</button>
+            <button type="submit" class="px-4 py-2 rounded-lg bg-gradient-to-r from-fuchsia-500 to-cyan-400 font-semibold">${isNew?'Create task':'Save changes'}</button>
+          </div>
+        </form>
+      `);
+
+      // Events
+      $('#taskForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const f = e.target;
+        const title = f.title.value.trim() || 'Untitled';
+        const desc = f.desc.value.trim();
+        const due = f.due.value ? new Date(f.due.value).toISOString() : '';
+        const colSel = f.col.value;
+        const assignees = Array.from($$('#taskForm input[type="checkbox"]:checked')).map(i => i.value);
+
+        if (isNew) {
+          const id = uid('t');
+          project.tasks[id] = { id, title, description: desc, assignees, dueDate: due, comments: [], createdAt: Date.now(), updatedAt: Date.now() };
+          const col = project.columns.find(c => c.id === colSel) || project.columns[0];
+          col.taskIds.push(id);
+          pushActivity(`created task “${title}”`, { projectId: project.id, taskId: id });
+        } else {
+          task.title = title;
+          task.description = desc;
+          task.assignees = assignees;
+          task.dueDate = due;
+          task.updatedAt = Date.now();
+          const curColId = findColumnIdByTask(project, task.id);
+          if (curColId !== colSel) {
+            moveTaskToColumn(project.id, task.id, colSel);
+          } else {
+            pushActivity(`updated task “${title}”`, { projectId: project.id, taskId: task.id });
+            save(); renderBoard();
+          }
+        }
+        closeModal();
+        showToast(isNew ? 'Task created' : 'Task saved');
+      });
+
+      $('#addCommentBtn').addEventListener('click', () => {
+        const input = $('#taskForm input[name="comment"]');
+        const text = input.value.trim();
+        if (!text) return;
+        if (isNew) {
+          showToast('Create the task first to comment');
+          return;
+        }
+        task.comments.push({ id: uid('cm'), userId: data.currentUserId, text, createdAt: Date.now() });
+        task.updatedAt = Date.now();
+        input.value = '';
+        pushActivity(`commented on “${task.title}”`, { projectId: project.id, taskId: task.id });
+        save();
+        // Refresh modal comments quickly
+        closeModal();
+        openTaskModal({ project, task, columnId: findColumnIdByTask(project, task.id) });
+      });
+
+      if (!isNew) {
+        $('#deleteTaskBtn').addEventListener('click', () => {
+          openConfirmModal({
+            title: 'Delete task?',
+            body: 'This cannot be undone (demo).',
+            confirmText: 'Delete',
+            confirmStyle: 'bg-rose-500 hover:bg-rose-600',
+            onConfirm: () => {
+              deleteTask(project.id, task.id);
+              closeModal();
+            }
+          });
+        });
+      }
+    }
+
+    function openConfirmModal({ title, body, confirmText='Confirm', confirmStyle='bg-white/15 hover:bg-white/25', onConfirm }) {
+      openModal(`
+        <div class="text-lg font-bold">${escapeHTML(title)}</div>
+        <div class="mt-2 text-sm opacity-90">${escapeHTML(body)}</div>
+        <div class="mt-4 flex justify-end gap-2">
+          <button class="modal-close px-4 py-2 rounded-lg hover:bg-white/10">Cancel</button>
+          <button id="confirmBtn" class="px-4 py-2 rounded-lg ${confirmStyle}">${escapeHTML(confirmText)}</button>
+        </div>
+      `);
+      $('#confirmBtn').addEventListener('click', () => { onConfirm?.(); closeModal(); });
+    }
+
+    // --- Models ---
+    function createProject(name, memberIds) {
+      const id = uid('p');
+      return {
+        id, name,
+        members: memberIds && memberIds.length ? memberIds : [data.currentUserId],
+        columns: [
+          { id: uid('c'), name: 'To Do', taskIds: [] },
+          { id: uid('c'), name: 'In Progress', taskIds: [] },
+          { id: uid('c'), name: 'Done', taskIds: [] }
+        ],
+        tasks: {}
+      };
+    }
+
+    // --- Avatars ---
+    function avatarBubble(user, size=22) {
+      const initials = (user?.name||'?').split(' ').map(x=>x[0]||'').join('').slice(0,2).toUpperCase();
+      const clr = user?.color || '#3b82f6';
+      return `
+        <span class="inline-flex items-center justify-center rounded-full text-[11px] font-bold text-white shadow" style="width:${size}px;height:${size}px;background:${clr}">${initials}</span>
+      `;
+    }
+    function smallAvatar(user) { return avatarBubble(user, 18); }
+
+    // --- Escape helpers ---
+    function escapeHTML(str='') {
+      return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+    }
+    function escapeAttr(str='') {
+      return escapeHTML(str).replace(/"/g, '&quot;');
+    }
+
+    // --- Wiring + Initial Render ---
+    function renderAll(toast=true) {
+      renderProjectSwitcher();
+      renderUserSwitcher();
+      renderSidebar();
+      renderBoard();
+      updateNotifBadge();
+      if (toast) { /* optional */ }
+    }
+
+    $('#notifBtn').addEventListener('click', (e) => { e.preventDefault(); toggleNotifPanel(); });
+    $('#markAllReadBtn').addEventListener('click', () => {
+      const cur = getCurrentUser();
+      data.userLastSeen[cur.id] = Date.now();
+      save();
+      updateNotifBadge();
+      renderNotifList();
+    });
+    $('#aboutBtn').addEventListener('click', () => openAboutModal());
+
+    // Init
+    load();
+    renderAll();
+
+    // Accessibility: keyboard focus trap basic for modal (simple)
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !$('#modalRoot').classList.contains('hidden')) closeModal();
+    });
+
+    // Global: New project quick
+    $('#newProjectBtn').addEventListener('click', (e) => { e.preventDefault(); openProjectModal(); });
+  </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9829333ec5a27e75',t:'MTc1ODQ1MzkwOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
